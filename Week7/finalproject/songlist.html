@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Danh sách Bài hát</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="custom_style.css">
+</head>
+<body>
+    <h2>Danh sách Hợp âm Công khai</h2>
+    
+    <div id="songs-list">
+        <p>Đang tải bài hát...</p>
+    </div>
+
+    <p>
+        <a href="login.html">Đăng nhập / Đăng ký</a> | 
+        <a href="upload.html">Đăng tải bài hát</a>
+    </p>
+    
+    <script>
+        const API_BASE_URL = 'http://localhost:3000/api';
+        const songsListContainer = document.getElementById('songs-list');
+
+        // Hàm xử lý sự kiện xóa bài hát
+        async function handleDelete(songId, songElement) {
+            const token = localStorage.getItem('jwtToken');
+            
+            if (!token) {
+                alert("Bạn cần đăng nhập để xóa bài hát.");
+                return;
+            }
+
+            if (!confirm("Bạn có chắc chắn muốn xóa bài hát này không?")) {
+                return;
+            }
+
+            try {
+                // Gửi yêu cầu DELETE đến Server Backend (cổng 3000)
+                const response = await fetch(`${API_BASE_URL}/songs/${songId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}` // Gửi Token xác thực
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    alert(`Lỗi khi xóa: ${errorData.message || 'Lỗi không xác định. Bạn có thể không có quyền.'}`);
+                    return;
+                }
+
+                // Xóa bài hát khỏi giao diện (thành công)
+                alert("Bài hát đã được xóa thành công.");
+                songElement.remove(); 
+                
+            } catch (error) {
+                console.error('Lỗi kết nối:', error);
+                alert('Lỗi kết nối mạng hoặc Server Backend không hoạt động.');
+            }
+        }
+
+        async function fetchSongs() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/songs`);
+                if (!response.ok) {
+                    songsListContainer.innerHTML = '<p style="color:red;" class="error-message">Lỗi khi tải dữ liệu từ Server.</p>';
+                    return [];
+                }
+                const songs = await response.json();
+                return songs;
+            } catch (error) {
+                songsListContainer.innerHTML = '<p style="color:red;" class="error-message">Lỗi kết nối Server. Vui lòng kiểm tra Node.js.</p>';
+                return [];
+            }
+        }
+
+        async function displaySongs() {
+            const songs = await fetchSongs();
+            
+            if (songsListContainer.innerHTML.includes('Lỗi')) return;
+
+            songsListContainer.innerHTML = '';
+            if (songs.length === 0) {
+                songsListContainer.innerHTML = '<p>Chưa có bài hát nào được đăng tải.</p>';
+                return;
+            }
+
+            songs.forEach(song => {
+                const currentSongId = song.id || song._id; // Logic dự phòng ID
+                
+                if (!currentSongId) {
+                    console.error("Bài hát thiếu ID và bị bỏ qua.");
+                    return;
+                }
+                
+                const lyricsPreview = song.lyrics_chords 
+                    ? (song.lyrics_chords.length > 80 
+                        ? song.lyrics_chords.substring(0, 80) + '...' 
+                        : song.lyrics_chords) 
+                    : 'Không có nội dung lời bài hát.';
+                    
+                const username = song.user_id && song.user_id.username ? song.user_id.username : 'Người dùng ẩn danh'; 
+
+                const songElement = document.createElement('div');
+                songElement.classList.add('song-item');
+                songElement.dataset.songId = currentSongId;
+                
+                songElement.innerHTML = `
+                    <h3>${song.title || 'Không tiêu đề'}</h3>
+                    <p class="song-info"><strong>Nghệ sĩ:</strong> ${song.artist || 'Không rõ'}</p>
+                    <p class="song-info"><strong>Đăng bởi:</strong> ${username}</p>
+                    <p class="song-preview">Xem trước: ${lyricsPreview}</p>
+                `;
+
+                // 🛑 TẠO VÀ GẮN NÚT XÓA
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Xóa';
+                deleteButton.classList.add('delete-btn');
+                
+                deleteButton.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Ngăn chặn sự kiện click vào nút Xóa làm chuyển hướng trang
+                    handleDelete(currentSongId, songElement);
+                });
+
+                songElement.appendChild(deleteButton);
+
+                // Logic chuyển hướng khi click vào *phần tử bài hát* (ngoài nút Xóa)
+                songElement.addEventListener('click', () => {
+                    // SỬ DỤNG LOGIC CHUYỂN HƯỚNG CƯỠNG CHẾ ĐỂ GIỮ ID TRÊN URL
+                    const fullUrl = `${window.location.origin}/songdetail.html?id=${currentSongId}`;
+                    window.location.href = fullUrl;
+                });
+
+                songsListContainer.appendChild(songElement);
+            });
+        }
+
+        window.onload = displaySongs; 
+    </script>
+</body>
+</html>
