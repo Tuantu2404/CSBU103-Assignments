@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Register</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+
+<h2>User Registration</h2>
+
+<form id="registerForm">
+    <div>
+        <label>Email (Username)</label><br>
+        <input type="text" id="username" name="username">
+        <span id="usernameError" style="color:red"></span>
+    </div>
+
+    <div>
+        <label>Password</label><br>
+        <input type="password" id="password" name="password">
+        <span id="passwordError" style="color:red"></span>
+    </div>
+
+    <div>
+        <label>Re-confirm Password</label><br>
+        <input type="password" id="repassword" name="repassword">
+        <span id="repasswordError" style="color:red"></span>
+    </div>
+
+    <br>
+    <button type="submit">Register</button>
+</form>
+
+<p id="successMsg" style="color:green"></p>
+
+<script>
+$(document).ready(function(){
+
+    $("#registerForm").submit(function(e){
+        e.preventDefault();
+
+        let username = $("#username").val().trim();
+        let password = $("#password").val();
+        let repassword = $("#repassword").val();
+
+        let isValid = true;
+
+        $("#usernameError").text("");
+        $("#passwordError").text("");
+        $("#repasswordError").text("");
+        $("#successMsg").text("");
+
+        // Email format regex
+        let emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        // Password: >=6 chars, at least 1 number, 1 special char
+        let passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z0-9!@#$%^&*]{6,}$/;
+
+        if(!emailRegex.test(username)){
+            $("#usernameError").text("Invalid email format!");
+            isValid = false;
+        }
+
+        if(!passwordRegex.test(password)){
+            $("#passwordError").text("Password must be at least 6 characters, contain 1 number and 1 special character!");
+            isValid = false;
+        }
+
+        if(password !== repassword){
+            $("#repasswordError").text("Passwords do not match!");
+            isValid = false;
+        }
+
+        if(isValid){
+            $.ajax({
+                url: "/register",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({
+                    username: username,
+                    password: password
+                }),
+                success: function(res){
+                    $("#successMsg").text(res.message);
+                    $("#registerForm")[0].reset();
+                },
+                error: function(err){
+                    alert(err.responseJSON.message);
+                }
+            });
+        }
+    });
+
+});
+</script>
+
+</body>
+</html>
