@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Photo Gallery Viewer</title>
+    <link rel="stylesheet" href="gallery.css" />
+</head>
+
+<body>
+    <h1>Photo Gallery Viewer</h1>
+
+    <!-- Image input box -->
+    <div class="add-image-box">
+        <input type="text" id="imgUrl" placeholder="Paste image URL or local file path">
+        <button id="addBtn">Add Image</button>
+    </div>
+
+    <!-- The gallery -->
+    <div id="gallery" class="gallery"></div>
+
+    <!-- Lightbox (popup preview) -->
+    <div id="lightbox" class="lightbox">
+        <img id="lightboxImg" src="">
+    </div>
+
+    <script src="gallery.js"></script>
+</body>
+</html>
